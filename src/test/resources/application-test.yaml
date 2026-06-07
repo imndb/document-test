@@ -1,0 +1,12 @@
+api:
+  base-url: http://localhost:8080
+
+aws:
+  s3:
+    bucket: my-dev-bucket
+    region: eu-central-1
+
+s3:
+  poll:
+    timeout-seconds: 30
+    interval-seconds: 2
