@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Coding im Alltag — Workshop @ RAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171c;
+    --bg-soft:#1a1e25;
+    --code-bg:#0f1216;
+    --ink:#f2efe8;
+    --muted:#98a1ad;
+    --muted-2:#6d7581;
+    --red:#e2002b;
+    --red-deep:#8f0019;
+    --line:rgba(255,255,255,.10);
+    --serif:'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    --sans:'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+  }
+  body{
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  ::selection{ background:var(--red); color:#fff; }
+
+  #deck{ position:fixed; inset:0; }
+
+  .slide{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    padding: 7vh 9vw;
+    opacity:0; transform:translateY(14px);
+    pointer-events:none;
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .slide.active{ opacity:1; transform:translateY(0); pointer-events:auto; z-index:2; }
+
+  .slide-inner{ width:100%; max-width:980px; }
+
+  h1,h2{ font-family:var(--serif); font-weight:600; letter-spacing:-0.01em; margin:0 0 .5em; color:var(--ink); }
+  h1{ font-size:clamp(2.3rem,5vw,4rem); line-height:1.05; }
+  h2{ font-size:clamp(1.6rem,3.1vw,2.35rem); line-height:1.15; }
+  p{ margin:0 0 .8em; }
+  .body{ font-size:clamp(1rem,1.35vw,1.18rem); line-height:1.6; color:var(--ink); }
+  .lede{ font-size:clamp(1.05rem,1.6vw,1.35rem); color:var(--muted); font-family:var(--serif); font-style:italic; line-height:1.5; }
+
+  ul.bullets{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.55em; }
+  ul.bullets li{ position:relative; padding-left:1.3em; }
+  ul.bullets li::before{ content:"—"; position:absolute; left:0; color:var(--red); }
+  ul.bullets li b, ul.bullets li strong{ color:#fff; font-weight:600; }
+
+  .quote{
+    border-left:4px solid var(--red);
+    padding:.3em 0 .3em 1em;
+    font-family:var(--serif); font-style:italic;
+    font-size:clamp(1.05rem,1.7vw,1.4rem);
+    color:#fbeceb;
+    margin:.6em 0;
+  }
+
+  .callout{
+    border:1px solid var(--line);
+    border-left:4px solid var(--red);
+    background:var(--bg-soft);
+    padding:.9em 1.1em;
+    border-radius:4px;
+    font-size:.95em;
+    color:var(--muted);
+    margin-top:.6em;
+  }
+
+  code, pre{ font-family:var(--mono); }
+  pre{
+    background:var(--code-bg);
+    border:1px solid var(--line);
+    border-left:3px solid var(--red);
+    border-radius:6px;
+    padding:.95em 1.1em;
+    overflow:auto;
+    font-size:clamp(.72rem,1.05vw,.92rem);
+    line-height:1.55;
+    color:#dce3ea;
+    max-height:52vh;
+  }
+  .comment{ color:var(--muted-2); }
+  .kw{ color:#ff9a76; }
+  .str{ color:#a8d08d; }
+
+  table{ width:100%; border-collapse:collapse; font-size:clamp(.85rem,1.15vw,1.02rem); }
+  th,td{ text-align:left; padding:.55em .8em; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ color:var(--muted); font-weight:600; font-family:var(--sans); }
+  td:first-child, th:first-child{ padding-left:0; }
+
+  .tag{
+    display:inline-block; color:var(--red); font-weight:600;
+    font-size:.85em; margin-bottom:.5em;
+    font-family:var(--sans); letter-spacing:.01em;
+  }
+
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:2.2em; }
+  @media (max-width: 760px){ .cols{ grid-template-columns:1fr; gap:1em; } }
+
+  .icon-row{ display:flex; flex-wrap:wrap; gap:1.4em 2.2em; margin:.4em 0 .8em; }
+  .icon-item{ display:flex; align-items:flex-start; gap:.55em; max-width:230px; }
+  .icon-item .glyph{ font-size:1.4em; line-height:1; }
+  .icon-item b{ display:block; color:#fff; }
+
+  .img-row{ display:flex; gap:.8em; align-items:flex-start; margin-top:.6em; }
+  .img-row img{ flex:1; max-width:320px; width:100%; display:block; border-radius:6px; }
+  .rag-image-container{ max-width:640px; margin:0.8em auto 0; }
+  .rag-image-container img{ width:100%; height:auto; display:block; border-radius:8px; }
+  .full-slide-image{ width:100%; max-width:100%; max-height:78vh; object-fit:contain; display:block; margin:0.6em auto 0; border-radius:8px; }
+
+  /* Title slide */
+  .title-slide .slide-inner{ text-align:left; }
+  .title-slide .brand{
+    color:var(--red); font-weight:600; font-size:.95rem;
+    text-transform:none; margin-bottom:1.4em; letter-spacing:.02em;
+  }
+  .title-slide h1{ max-width:11ch; }
+  .title-slide .subtitle{ font-family:var(--serif); font-style:italic; color:var(--muted); font-size:clamp(1.05rem,1.9vw,1.4rem); max-width:34ch; margin-top:.3em; }
+  .title-slide .meta{ margin-top:2.4em; color:var(--muted-2); font-size:.95rem; }
+
+  /* Divider */
+  .divider{ background:linear-gradient(155deg, var(--red) 0%, var(--red-deep) 100%); }
+  .divider .slide-inner{ text-align:center; }
+  .divider h1{ color:#fff; max-width:none; }
+  .divider .subtitle{ color:rgba(255,255,255,.78); font-family:var(--serif); font-style:italic; font-size:clamp(1.05rem,1.8vw,1.35rem); }
+  .divider .step{ color:rgba(255,255,255,.65); font-size:.95rem; margin-bottom:1em; }
+
+  /* Closing */
+  .closing .slide-inner{ text-align:center; }
+  .closing .quote{ border:none; display:inline-block; text-align:center; padding:0; margin:.4em auto 0; max-width:24ch; }
+
+  /* Chrome: progress, hud, edges, hint */
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:3px; background:var(--line); z-index:10; }
+  .progress-bar{ height:100%; width:0%; background:var(--red); transition:width .4s ease; }
+
+  .edge{ position:fixed; top:0; bottom:0; width:7vw; z-index:5; cursor:pointer; }
+  .edge-prev{ left:0; } .edge-next{ right:0; }
+
+  .hud{
+    position:fixed; right:1.4em; bottom:1.2em; z-index:10;
+    display:flex; align-items:center; gap:.6em;
+    font-family:var(--mono); font-size:.85rem; color:var(--muted);
+    background:rgba(20,23,28,.65); backdrop-filter:blur(6px);
+    border:1px solid var(--line); border-radius:999px; padding:.35em .5em;
+  }
+  .hud-btn{
+    appearance:none; border:none; background:transparent; color:var(--ink);
+    width:1.9em; height:1.9em; border-radius:50%; cursor:pointer;
+    font-size:1.05rem; line-height:1; display:flex; align-items:center; justify-content:center;
+    transition:background .2s;
+  }
+  .hud-btn:hover{ background:var(--line); }
+  .hud-counter{ padding:0 .3em; min-width:5.2em; text-align:center; }
+
+  .hint{
+    position:fixed; left:1.4em; bottom:1.3em; z-index:10;
+    font-size:.78rem; color:var(--muted-2); font-family:var(--sans);
+    transition:opacity 1s ease; opacity:1;
+  }
+  .hint.faded{ opacity:0; }
+
+  :focus-visible{ outline:2px solid var(--red); outline-offset:3px; }
+
+  @media (max-width: 700px){
+    .slide{ padding:8vh 6vw; }
+    .icon-row{ gap:1em 1.4em; }
+  }
+
+  @media print{
+    body{ background:#fff; color:#111; }
+    .progress-track,.hud,.hint,.edge{ display:none !important; }
+    #deck{ position:static; }
+    .slide{
+      position:static; opacity:1 !important; transform:none !important;
+      height:100vh; page-break-after:always; background:#fff !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-bar" id="progress"></div></div>
+
+<div id="deck">
+
+  <section class="slide title-slide active" data-index="0">
+    <div class="slide-inner">
+      <div class="brand">🤖 AI Coding Workshop</div>
+      <h1>Wie Agentic Coding uns schneller macht</h1>
+      <div class="subtitle">Sicher und kontrolliert — nicht als Ersatz für Architektur, Tests und Verantwortung</div>
+      <div class="meta">AI Coding Workshop @ RAI</div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="1">
+    <div class="slide-inner">
+      <h2 style="margin-top:0; margin-bottom:.35em;">Inspiration: Uncle Bob</h2>
+      <div class="img-row">
+          <img src="uncle_bob_agents.jpg" alt="Uncle Bob Agents">
+          <img src="uncle-bob.png" alt="Uncle Bob">
+        </div>
+      <p class="quote" style="margin-top:1em; font-size:clamp(1rem,1.4vw,1.2rem);">YouTube Interview on AI: Uncle Bob on Software Fundamentals in the Age of AI</p>
+    </div>
+  </section>
+
+  <section class="slide" data-index="2">
+    <div class="slide-inner">
+      <h2>Agenda</h2>
+      <div class="body">
+        <ul class="bullets">
+          <li>Warum AI Coding — und wo die Grenzen liegen</li>
+          <li>RAI-Leitplanken &amp; Governance für sichere Nutzung</li>
+          <li>AI-Readiness: was vor dem ersten Agent-Run stimmt</li>
+          <li>Die wichtigsten Konzepte — einfach erklärt, mit Beispielen<br>
+              <span style="color:var(--muted)">(LLM, Tokens, Agent, Prompt- vs. Context-Engineering, Instructions, Skills, Subagents, MCP)</span></li>
+          <li>Risiken, Sicherheit und Spec-Driven Development</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="3">
+    <div class="slide-inner">
+      <h2>Warum AI Coding?</h2>
+      <div class="body">
+        <p class="quote">AI Coding kann Hürden reduzieren, aber nur auf einer gesunden Engineering-Basis.</p>
+        <ul class="bullets">
+          <li>Schnellere Exploration und Einarbeitung — weniger wiederkehrender Boilerplate-Code</li>
+          <li><b>Kein</b> Ersatz für Architektur, Tests, Code Reviews oder Verantwortung</li>
+          <li>Ein KI-Agent verstärkt, was im Repo schon da ist — gut <b>und</b> schlecht -> Testing immer wichtiger</li>
+        </ul>
+        <p class="quote" style="margin-top:1.1em;">Der Agent ist so gut wie dein Repo, deine Tests und dein Context.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="4">
+    <div class="slide-inner">
+      <h2>RAI-Leitplanken — Regel #1: Vertraulichkeit</h2>
+      <div class="body">
+        <ul class="bullets">
+          <li>Source Code ist <b>mindestens „Intern"</b>. Verarbeitet die Anwendung höher klassifizierte Daten, übernehmen Code und Kopien die höchste Klassifizierung.</li>
+          <li>Keine vertraulichen/geheimen Inhalte in externe AI-Tools — nur <b>freigegebene Enterprise-Instanzen</b> und Use Cases.</li>
+          <li>SITAN &amp; AGB <b>vor</b> der Nutzung prüfen: Speicherort, Training, Zugriff.</li>
+          <li>MCP-Server und Agents brauchen <b>explizite Governance</b>.</li>
+          <li>Die menschliche Verantwortung bleibt bei uns — vor jedem Merge.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="5">
+    <div class="slide-inner">
+      <h2>AI-Readiness: bevor der Agent das Repo berührt</h2>
+      <div class="body">
+        <table>
+          <tr><th>#</th><th>Voraussetzung</th><th>Warum</th></tr>
+          <tr><td>1</td><td>Saubere Architektur</td><td>Klare Modulgrenzen → klare KI-Ergebnisse</td></tr>
+          <tr><td>2</td><td>Automatisierte Quality Gates</td><td>Linting, Tests, SonarQube fangen Fehler ab</td></tr>
+          <tr><td>3</td><td>Schneller Feedback-Loop</td><td>Schnelle Builds/Tests = sichere Iteration</td></tr>
+          <tr><td>4</td><td>Kontext by Design</td><td>README, ADRs, <code>AGENTS.md</code>/<code>CLAUDE.md</code></td></tr>
+          <tr><td>5</td><td>Security-Isolation</td><td>Sandbox, keine Secrets im Kontext</td></tr>
+          <tr><td>6</td><td>Team-Fähigkeit</td><td>Diffs hinterfragen statt blind mergen</td></tr>
+        </table>
+        <p class="quote" style="margin-top:.9em;">Ohne 1–3 verstärkt KI bestehende Probleme — unklare Grenzen und flaky Tests werden zu schnellerem Chaos.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="6">
+    <div class="slide-inner">
+      <h2>Wie ich einen AI-Agenten sehe</h2>
+      <div class="body">
+        <div class="icon-row">
+          <div class="icon-item"><span class="glyph">🤝</span><div><b>Helfer</b>schneller, effizienter Mitarbeiter</div></div>
+          <div class="icon-item"><span class="glyph">🧭</span><div><b>Discoverer</b>findet sich im Projekt zurecht</div></div>
+          <div class="icon-item"><span class="glyph">👥</span><div><b>Pair Programmer</b>ich bleibe der Reviewer</div></div>
+          <div class="icon-item"><span class="glyph">⚙️</span><div><b>Executor</b>führt aus, was ich selbst nie gebaut habe</div></div>
+        </div>
+        <p class="quote" style="margin-top:1em;">Es ist ein Kollege, kein Orakel. Die Verantwortung bleibt bei mir.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="7">
+    <div class="slide-inner">
+      <h2>Stufen des AI‑Coding</h2>
+      <div class="body">
+        <table>
+          <tr><th>Stufe</th><th>Name</th><th>Rolle der KI</th></tr>
+          <tr><td>1</td><td>KI‑Code‑Unterstützung</td><td>On‑Demand‑Chat (ChatGPT, Claude) — Entwickler bindet die Antworten manuell ein</td></tr>
+          <tr><td>2</td><td>KI‑Code‑Generierung</td><td>IDE‑Plugins schlagen Code inline vor (Copilot, JetBrains AI)</td></tr>
+          <tr><td>3</td><td>Agentische KI‑Entwicklung</td><td>Agent liest, schreibt und führt Tests eigenständig aus (Claude Code, Cursor, Copilot CLI)</td></tr>
+          <tr><td>4</td><td>Spec‑Driven Development</td><td>Mensch und KI verfassen gemeinsam eine Spezifikation; der Agent setzt sie um (gleiche Tools, höhere Disziplin)</td></tr>
+          <tr><td>5</td><td>Autonome Produktentwicklung</td><td>KI entwickelt ganze Produkte eigenständig (Z. B. Devin AI)</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide divider" data-index="8">
+    <div class="slide-inner">
+      <div class="step">Teil 2 von 3</div>
+      <h1>Die wichtigsten Konzepte</h1>
+      <div class="subtitle">Einfach erklärt — mit Beispiel</div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="9">
+    <div class="slide-inner">
+      <div class="tag">Konzept 1 von 9</div>
+      <h2>Was ist ein LLM?</h2>
+      <div class="body">
+        <p>Ein <b>Large Language Model</b> ist ein neuronales Netz, trainiert auf riesigen Textmengen. Es sagt jeweils das <b>wahrscheinlichste nächste Token</b> voraus — es „weiss" nichts, es <b>rechnet Wahrscheinlichkeiten</b>.</p>
+        <div class="callout"><b style="color:#fff;">Beispiel:</b> „Der Himmel ist ___" → Modell schlägt „blau" vor, weil diese Fortsetzung in den Trainingsdaten am häufigsten vorkam.</div>
+        <p style="margin-top:.9em;"><b>Für die Praxis wichtig:</b></p>
+        <ul class="bullets">
+          <li>LLMs sind <b>probabilistisch</b> → gleiche Frage kann leicht unterschiedliche Antworten liefern</li>
+          <li>Trainings-Cutoff: aktuelle Infos müssen als Kontext oder über Tools (MCP) mitgegeben werden</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="10">
+    <div class="slide-inner">
+      <div class="tag">Konzept 2 von 9</div>
+      <h2>Tokens &amp; Context Window</h2>
+      <div class="body">
+        <ul class="bullets">
+          <li>Text wird in <b>Tokens</b> zerlegt (grob: 1 Token ≈ 4 Zeichen)</li>
+          <li>Beispiel: „Kontoauszug" → drei Tokens: <code>Kon</code> <code>to</code> <code>auszug</code></li>
+          <li><b>Context Window</b> = Kurzzeitgedächtnis des Modells: alles, was es in einer Anfrage „sieht"</li>
+          <li>Ist das Fenster voll, wird älterer Inhalt komprimiert oder vergessen (<b>Compaction</b>)</li>
+        </ul>
+        <div class="callout"><b style="color:#fff;">Praxis-Tipp:</b> Sessions unter ca. 100k Tokens halten — <code>/context</code>, <code>/compact "wichtige Entscheidungen behalten"</code>, <code>/clear</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="11">
+    <div class="slide-inner">
+      <div class="tag">Konzept 3 von 9</div>
+      <h2>Was ist ein AI-Agent? (Agentic Loop)</h2>
+      <div class="body">
+        <p><b>Assistant</b> chattet nur — <b>Agent</b> handelt: liest Dateien, schreibt Code, führt Befehle aus, wertet Ergebnisse aus.</p>
+        <pre>Prompt → Reasoning → Tool Call → Tool-Ergebnis → (wiederholen) → Antwort</pre>
+        <div class="callout">
+          <b style="color:#fff;">Beispiel:</b> „Füge einen Test für die Zinsberechnung hinzu."<br>
+          → Agent liest <code>ZinsService.java</code> → schreibt Test → führt <code>mvn test</code> aus →
+          sieht Fehler → korrigiert → wiederholt, bis grün.
+        </div>
+        <p style="margin-top:.7em;">Der Loop läuft <b>autonom</b> — der Mensch setzt das Ziel und prüft das Ergebnis.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="12">
+    <div class="slide-inner">
+      <div class="tag">Konzept 4 von 9</div>
+      <h2>Prompt-Engineering vs. Context-Engineering</h2>
+      <div class="cols">
+        <div>
+          <p><b>Prompt-Engineering</b><br><span style="color:var(--muted)">wie ich frage</span></p>
+          <div class="callout">„Du bist Senior-Java-Reviewer. Prüfe diesen Diff strikt auf Security-Probleme, priorisiert."</div>
+        </div>
+        <div>
+          <p><b>Context-Engineering</b><br><span style="color:var(--muted)">was das Modell sehen darf/soll</span></p>
+          <div class="callout">Regeln einmal in <code>AGENTS.md</code> statt in jedem Prompt neu zu erklären.</div>
+        </div>
+      </div>
+      <p class="quote" style="margin-top:1.3em;">Context Engineering schlägt Prompt Engineering — strukturell wichtiger für wiederholbare, gute Ergebnisse.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-index="13">
+    <div class="slide-inner">
+      <div class="tag">Konzept 5 von 9</div>
+      <h2>Project Instructions</h2>
+      <div class="body">
+        <p><code>AGENTS.md</code> / <code>CLAUDE.md</code> / <code>copilot-instructions.md</code>: Regeln <b>einmal</b> definieren statt in jedem Prompt zu wiederholen.</p>
+        <table style="margin-bottom:.7em;">
+          <tr><th>Ebene</th><th>Datei</th></tr>
+          <tr><td>User (global)</td><td><code>~/.copilot/copilot-instructions.md</code></td></tr>
+          <tr><td>Projekt</td><td><code>.github/copilot-instructions.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code></td></tr>
+        </table>
+        <pre><span class="comment"># AGENTS.md</span>
+## Grundregeln
+- Starte bei unklaren Anforderungen mit Rückfragen.
+- Keine Secrets oder produktiven Daten lesen/ausgeben.
+## Engineering-Standards
+- Halte bestehende Architektur- und Modulgrenzen ein.</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="14">
+    <div class="slide-inner">
+      <div class="tag">Konzept 6 von 9</div>
+      <h2>Skills — wiederverwendbare Mini-Prozesse</h2>
+      <div class="body">
+        <p>Ein <b>Skill</b> = ein Ordner mit <code>SKILL.md</code>. Wird automatisch getriggert, wenn seine Beschreibung passt — oder manuell per <code>/skill-name</code>.</p>
+        <pre><span class="comment">---</span>
+name: RAI-code-review
+description: Prüft Code auf Qualität, Tests, Security.
+  Verwenden, wenn ein PR reviewed werden soll.
+<span class="comment">---</span>
+Prüfe: keine Secrets · Tests vorhanden · klare Modulgrenzen.
+Berichte nach Priorität: Kritisch / Warnung / Vorschlag.</pre>
+        <p style="margin-top:.6em; color:var(--muted);">Drei Typen: <b style="color:#fff;">Knowledge</b>-, <b style="color:#fff;">Workflow</b>- und <b style="color:#fff;">Tool</b>-Skills.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="15">
+    <div class="slide-inner">
+      <div class="tag">Konzept 7 von 9</div>
+      <h2>Subagents</h2>
+      <div class="body">
+        <p>Ein <b>Subagent</b> hat ein eigenes, isoliertes Context-Fenster. Nur sein <b>Endergebnis</b> fliesst zurück in die Hauptkonversation — spart Tokens, hält den Hauptkontext sauber.</p>
+        <div class="callout">
+          <b style="color:#fff;">Beispiel:</b> Ein <code>log-analyzer</code>-Subagent liest ein 5.000-Zeilen-Build-Log
+          und meldet nur: „3 Fehler gefunden: NullPointerException in <code>OrderMapper:42</code>. 2 Warnungen."
+        </div>
+        <p style="margin-top:.7em;">Einsatzgebiete: Code Review, Log-Analyse, Recherche — parallel zur Hauptaufgabe.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="16">
+    <div class="slide-inner">
+      <h2>Subagent erstellen</h2>
+      <div class="body">
+        <p>Du kannst Subagents manuell schreiben oder interaktiv erzeugen: `/agent` → <b>Create new agent</b> (Copilot generiert ein interaktives Template).</p>
+        <p>Beispiel <b>log-analyzer.agent.md</b>:</p>
+        <pre>---
+name: log-analyzer
+description: Analysiert Build-Logs und Fehlerausgaben. Nutze mich bei Build-Fehlern, langen Log-Dateien oder wenn "logcheck" im Prompt vorkommt.
+tools: [read, grep]
+---
+
+Du bist ein Log-Analyse-Experte. Lies die angegebene Log-Datei vollständig,
+identifiziere alle Fehler und Warnungen, und antworte NUR mit einer kompakten
+Zusammenfassung im Format:
+"X Fehler gefunden: [Fehlertyp] in [Datei:Zeile]. Y Warnungen."
+
+Gib keine Rohdaten oder Log-Auszüge zurück, nur die Zusammenfassung.
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="17">
+    <div class="slide-inner">
+      <div class="tag">Konzept 8 von 9</div>
+      <h2>Multi-Agent / Orchestrierung</h2>
+      <div class="body">
+        <p>Mehrere (Sub-)Agenten arbeiten <b>parallel oder in Ketten</b> an Teilaufgaben.</p>
+        <div class="callout">
+          <b style="color:#fff;">Beispiel:</b> Ein „Planner"-Agent zerlegt ein Feature in Tasks →
+          mehrere „Worker"-Agenten implementieren parallel → ein „Reviewer"-Agent prüft alle Diffs.
+        </div>
+        <table style="margin-top:.8em;">
+          <tr><th>Vorteil</th><th>Risiko</th></tr>
+          <tr><td>Höherer Durchsatz, weniger Hand-offs</td><td>Runaway Agents, verlorene Human-Checkpoints</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  
+
+  <section class="slide" data-index="18">
+    <div class="slide-inner">
+      <div class="tag">Konzept 9 von 9</div>
+      <h2>MCP (Model Context Protocol)</h2>
+      <div class="body">
+        <p>Offener Standard von Anthropic: verbindet Agenten mit <b>externen Systemen</b> (GitHub, Jira, Datenbanken, …).</p>
+        <pre>Host (Copilot/Claude) → MCP-Client → MCP-Server → externes System</pre>
+        <p><b>Beispiel:</b> Ein GitHub-MCP-Server erlaubt dem Agenten, Issues zu lesen und PRs zu erstellen — ohne Custom-Integration.</p>
+        <div class="callout">⚠️ Reales Sicherheitsrisiko (Prompt Injection, Tool-Missbrauch). Nur von RAI freigegebene MCP-Server verwenden.</div>
+      </div>
+    </div>
+  </section>
+
+  
+
+  <section class="slide" data-index="19">
+    <div class="slide-inner">
+      <h2>Risiken &amp; typische Entwickler-Sorgen</h2>
+      <div class="body">
+        <ul class="bullets">
+          <li><b>„Almost right"-Frust</b> — Output sieht plausibel aus, braucht Nacharbeit</li>
+          <li><b>Debugging-Aufwand</b> — schneller generiert ≠ schneller ausgeliefert</li>
+          <li><b>Quality Drift</b> — ohne Leitplanken entstehen technische Schulden</li>
+          <li><b>Data Leakage</b> — Prompts/Logs können geschützte Infos enthalten</li>
+          <li><b>Kosteneskalation</b> — lange Sessions verbrauchen Tokens</li>
+        </ul>
+        <p class="quote" style="margin-top:.9em;">Mitigation: Ask/Plan-Modus starten, Autopilot nur für Low-Risk, Diffs immer reviewen.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="20">
+    <div class="slide-inner">
+      <h2>Spec-Driven Development — kurz</h2>
+      <div class="body">
+        <pre>0. Feature &amp; Datenklassifizierung klären
+1. Kleine Spec mit Akzeptanzkriterien schreiben
+2. KI nach Rückfragen/Edge-Cases fragen lassen
+3. Plan freigeben, bevor Dateien geändert werden
+4. In kleinen Schritten implementieren
+5. Mit Tests, Review und Security-Checks verifizieren</pre>
+        <p style="margin-top:.7em;"><b>Loop:</b> Spec → Review → Plan → Implement → Verify</p>
+        <p style="color:var(--muted);">Die Spec überlebt Context-Resets — neue Sessions starten von ihr, nicht vom Chat-Verlauf.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="21">
+    <div class="slide-inner">
+      <h2>Nächste Schritte</h2>
+      <div class="body">
+        <ul class="bullets">
+          <li>AI-Readiness-Score pro Repo erheben</li>
+          <li><code>AGENTS.md</code>/<code>CLAUDE.md</code> in aktiven Repos anlegen</li>
+          <li>Erstes <code>SKILL.md</code>-Template im Team-Space ablegen</li>
+          <li>Guardrails definieren: Team-Standard für <code>permissions-config.json</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide closing" data-index="22">
+    <div class="slide-inner">
+      <h1>Merksatz</h1>
+      <p class="quote">Der AI-Agent ist so gut wie dein Repo, deine Tests und dein Context.<br>Alles andere ist Marketing.</p>
+      <p style="margin-top:1.6em; color:var(--muted); font-family:var(--serif); font-style:italic; font-size:1.2rem;">Fragen &amp; Diskussion</p>
+    </div>
+  </section>
+
+  <section class="slide" data-index="23">
+    <div class="slide-inner">
+      <h2>Quellen</h2>
+      <div class="body">
+        <ul class="bullets">
+          <li>ti&amp;m — <i>Agentic Coding for Software Engineers</i>, Kurs 2026-07-22</li>
+          <li>Anthropic — Model Context Protocol (modelcontextprotocol.io), Claude Code Docs</li>
+          <li>GitHub Copilot CLI Dokumentation</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="24">
+    <div class="slide-inner">
+      <h2>KI-Modelle lokal betrieben</h2>
+      <div class="body">
+        <p>Installing Open WebUI with Bundled Ollama Support</p>
+        <p>Dieses Installationsverfahren nutzt ein einzelnes Container-Image, das Open WebUI mit Ollama bündelt und so eine einfache Inbetriebnahme mit nur einem Befehl ermöglicht. Wähle den passenden Befehl je nach Hardware:</p>
+        <p><b>Mit GPU-Unterstützung</b> — nutzt GPU-Ressourcen:</p>
+        <pre>docker run -d -p 3000:8080 --gpus=all -v ollama:/root/.ollama -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:ollama</pre>
+        <p><b>Nur CPU</b> — wenn keine GPU verfügbar ist:</p>
+        <pre>docker run -d -p 3000:8080 -v ollama:/root/.ollama -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:ollama</pre>
+        <p>Beide Befehle installieren Open WebUI und Ollama in einem Rutsch. Nach der Installation erreichst du Open WebUI unter <a href="http://localhost:3000">http://localhost:3000</a>.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+  <section class="slide" data-index="25">
+    <div class="slide-inner">
+      <h2>Was ist RAG?</h2>
+      <div class="body">
+        <p>Generative KI verfügen in der Regel nicht über verlässliche Quellenangaben und sind nicht zwangsläufig aktuell. RAG (Retrieval‑Augmented Generation) kann hier helfen: Ein Retrieval‑System holt relevanten Kontext aus einer Wissensquelle (z. B. hochgeladene Dateien oder eine lokale Datenbank) und stellt ihn dem Modell bereit, sodass Antworten präziser und besser nachvollziehbar werden.</p>
+        <p>Retrieval-Augmented Generation (RAG) kombiniert eine Wissensquelle (z. B. hochgeladene Dateien oder eine lokale Datenbank) mit einem Sprachmodell: Ein Retrieval-System sucht relevante Informationen aus der Wissensquelle und stellt sie dem Modell als Kontext bereit. Das Modell nutzt diesen Kontext, um präzisere und kontextreichere Antworten zu erzeugen.</p>
+        
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="26">
+    <div class="slide-inner">
+      <div style="text-align:center;">
+        <img src="open-webui.svg" alt="Open WebUI — Knowledge / Workspace" class="full-slide-image">
+      </div>
+      <h2 style="margin-top:0.8em;">Open WebUI — Ressourcen &amp; Start</h2>
+      <div class="body">
+        <p>Weitere Ressourcen und Startpunkte:</p>
+        <ul class="bullets">
+          <li><a href="https://ollama.com/library" style="color:var(--ink);">LLM-Bibliothek (Ollama): https://ollama.com/library</a></li>
+          <li><a href="https://github.com/open-webui/open-webui#installing-open-webui-with-bundled-ollama-support" style="color:var(--ink);">Open WebUI — Install (bundled Ollama): https://github.com/open-webui/open-webui#installing-open-webui-with-bundled-ollama-support</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+<div class="edge edge-prev" id="zone-prev" aria-hidden="true"></div>
+<div class="edge edge-next" id="zone-next" aria-hidden="true"></div>
+
+<div class="hud">
+  <button class="hud-btn" id="btn-prev" aria-label="Vorherige Folie">‹</button>
+  <span class="hud-counter" id="counter">01 / 21</span>
+  <button class="hud-btn" id="btn-next" aria-label="Nächste Folie">›</button>
+  <button class="hud-btn hud-fs" id="btn-fs" aria-label="Vollbild umschalten" title="Vollbild (F)">⤢</button>
+</div>
+
+<div class="hint" id="hint">→ / Leertaste weiter · ← zurück · F Vollbild</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var idx = 0;
+
+  var progress = document.getElementById('progress');
+  var counter = document.getElementById('counter');
+  var hint = document.getElementById('hint');
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function render(){
+    slides.forEach(function(s, i){ s.classList.toggle('active', i === idx); });
+    counter.textContent = pad(idx+1) + ' / ' + pad(total);
+    progress.style.width = (total > 1 ? (idx/(total-1))*100 : 100) + '%';
+    if(history.replaceState){ history.replaceState(null, '', '#' + (idx+1)); }
+  }
+
+  function go(n){
+    idx = Math.max(0, Math.min(total - 1, n));
+    render();
+  }
+
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx-1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx+1); });
+  document.getElementById('zone-prev').addEventListener('click', function(){ go(idx-1); });
+  document.getElementById('zone-next').addEventListener('click', function(){ go(idx+1); });
+
+  document.getElementById('btn-fs').addEventListener('click', function(){
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+    else { document.exitFullscreen && document.exitFullscreen(); }
+  });
+
+  window.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' '){
+      e.preventDefault(); go(idx+1);
+    } else if(e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp'){
+      e.preventDefault(); go(idx-1);
+    } else if(e.key === 'Home'){
+      e.preventDefault(); go(0);
+    } else if(e.key === 'End'){
+      e.preventDefault(); go(total-1);
+    } else if(e.key === 'f' || e.key === 'F'){
+      document.getElementById('btn-fs').click();
+    }
+  });
+
+  var touchX = null;
+  window.addEventListener('touchstart', function(e){ touchX = e.touches[0].clientX; }, {passive:true});
+  window.addEventListener('touchend', function(e){
+    if(touchX === null) return;
+    var dx = e.changedTouches[0].clientX - touchX;
+    if(dx < -40) go(idx+1);
+    if(dx > 40) go(idx-1);
+    touchX = null;
+  }, {passive:true});
+
+  var startHash = parseInt((location.hash || '').replace('#',''), 10);
+  idx = (!isNaN(startHash) && startHash >= 1 && startHash <= total) ? startHash - 1 : 0;
+  render();
+
+  setTimeout(function(){ hint.classList.add('faded'); }, 5000);
+})();
+</script>
+
+</body>
+</html>
